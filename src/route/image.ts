@@ -3,26 +3,20 @@ import {
     Response,
 } from "express";
 
-import Point from "../common/geometry/point";
-import Bounds from "../common/geometry/bounds";
+import Coordinates from "../common/geo/coordinates";
+import CoordinatesBounds from "../common/geo/coordinatesBounds";
 
 export const generate = (request: Request, response: Response) => {
     console.log('generating...');
 
-    const point1 = new Point(-40, -10);
-    const point2 = new Point(0, 0);
-    const point3 = new Point(50, -50);
-    const point4 = new Point(25, 25);
+    const coordinatesBounds = new CoordinatesBounds([
+        new Coordinates(0, 0),
+        new Coordinates(51, 21),
+        new Coordinates(-51, 25),
+        new Coordinates(10, -10),
+    ]);
 
-    const bounds = new Bounds([point1, point2, point3, point4]);
-
-    console.log(bounds.getBottomLeft());
-    console.log(bounds.getTopRight());
-    console.log(bounds.getTopLeft());
-    console.log(bounds.getBottomRight());
-    console.log(bounds.getSize());
-
-    console.log(bounds.getCenter());
+    console.log(coordinatesBounds, coordinatesBounds.getCenter());
     
     response.json({
         message: "ok",

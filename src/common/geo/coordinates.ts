@@ -30,6 +30,16 @@ class Coordinates {
 	public getLongitudeRad() {
 		return this.longitude * Math.PI / 180;
 	}
+
+	public setLatitude(latitude:number) {
+		this.latitude = latitude;
+		return this;
+	}
+
+	public setLongitude(longitude:number) {
+		this.longitude = longitude;
+		return this;
+	}
 }
 
 export default Coordinates;

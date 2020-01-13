@@ -1,12 +1,13 @@
 import Bounds from '../../geometry/bounds';
-import Point from '../../geometry/point';
 import Coordinates from "../coordinates";
+import Point from '../../geometry/point';
+import ProjectionInterface from "./projectionInterface";
 
 const R = 6378137;
 const R_MINOR = 6356752.314245179;
 
-class Mercator {
-	private bounds = new Bounds([
+class Mercator implements ProjectionInterface {
+	public bounds = new Bounds([
 		new Point(-20037508.34279, -15496570.73972),
 		new Point(20037508.34279, 18764656.23138),
 	]);
