@@ -6,26 +6,30 @@ class Bounds {
 
 	constructor(private points: Point[]) {
 		points.forEach((point) => {
-			this.min.x = Math.min(this.min.x, point.x);
-			this.max.x = Math.max(this.max.x, point.x);
-			this.min.y = Math.min(this.min.y, point.y);
-			this.max.y = Math.max(this.max.y, point.y);
+			this.min
+				.setX(Math.min(this.min.getX(), point.getX()))
+				.setY(Math.min(this.min.getY(), point.getY()))
+			;
+			this.max
+				.setX(Math.max(this.max.getX(), point.getX()))
+				.setY(Math.max(this.max.getY(), point.getY()))
+			;
 		});
 	};
 
 	public getCenter() {
 		return new Point(
-			(this.min.x + this.max.x) / 2,
-			(this.min.y + this.max.y) / 2
+			(this.min.getX() + this.max.getX()) / 2,
+			(this.min.getY() + this.max.getY()) / 2
 		);
 	};
 
 	public getBottomLeft() {
-		return new Point(this.min.x, this.max.y);
+		return new Point(this.min.getX(), this.max.getY());
 	};
 
 	public getTopRight() {
-		return new Point(this.max.x, this.min.y);
+		return new Point(this.max.getX(), this.min.getY());
 	};
 
 	public getTopLeft() {

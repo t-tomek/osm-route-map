@@ -22,7 +22,7 @@ class SphericalMercator implements ProjectionInterface {
 		const latitude = Math.max(
 			Math.min(
 				MAX_LATITUDE_RAD,
-				coordinates.getLatitude()
+				coordinates.getLatitudeRad()
 			),
 			-MAX_LATITUDE_RAD
 		);

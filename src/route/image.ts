@@ -3,23 +3,36 @@ import {
     Response,
 } from "express";
 
+import Point from "../common/geometry/point";
 import Coordinates from "../common/geo/coordinates";
 import CoordinatesBounds from "../common/geo/coordinatesBounds";
+import Map from "../common/map";
+
 
 export const generate = (request: Request, response: Response) => {
-    console.log('generating...');
+    const map = new Map({
+        width: 1000,
+        height: 400,
+        // center: new Coordinates(52, 19),
+        // zoom: 4,
+        maxZoom: 19,
+        minZoom: 1,
+    });
 
-    const coordinatesBounds = new CoordinatesBounds([
-        new Coordinates(0, 0),
-        new Coordinates(51, 21),
-        new Coordinates(-51, 25),
-        new Coordinates(10, -10),
+
+    const bounds = new CoordinatesBounds([
+        new Coordinates(51.10193, 17.03683),
+        new Coordinates(51.10378, 17.02399),
+        new Coordinates(51.10333, 17.01929),
+        new Coordinates(51.09540, 17.01656),
+        new Coordinates(50.89423, 14.89951),
+
     ]);
 
-    console.log(coordinatesBounds, coordinatesBounds.getCenter());
-    
+
     response.json({
-        message: "ok",
+        map,
+        zoom: map.getBoundsCenterZoom(bounds),
     });
     
 //     const coordinates = request.query.coordinates
@@ -27,3 +40,4 @@ export const generate = (request: Request, response: Response) => {
 //         .map((x) => x.split(','));
 //     console.log(coordinates);
 }; 
+

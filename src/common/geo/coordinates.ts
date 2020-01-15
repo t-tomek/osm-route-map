@@ -1,11 +1,16 @@
 class Coordinates {
+
 	constructor(
 		protected latitude: number,
 		protected longitude: number,
-		protected alt?: number
+		protected altitude: number | null = null
 	) {
 		//	
 	};
+
+	public getAlt() {
+		return this.altitude;
+	}
 
 	public getLatitude() {
 		return this.latitude;

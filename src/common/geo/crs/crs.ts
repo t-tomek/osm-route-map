@@ -4,21 +4,22 @@ import ProjectionInterface from "../projection/projectionInterface";
 
 
 abstract class Crs {
-	protected projection: ProjectionInterface;
+	protected abstract transformation: any;
+	protected abstract projection: ProjectionInterface;
 	protected infinite = false;
 
 	public coordinatesToPoint(coordinates:Coordinates, zoom:number) {
-		// const projectedPoint = this.projection.project(latlng);
-		// const scale = this.scale(zoom);
+		const scale = this.scale(zoom);
+		const projectedPoint = this.projection.project(coordinates);
 
-		// return this.transformation._transform(projectedPoint, scale);
+		return this.transformation.transform(projectedPoint, scale);
 	}
 
 	public pointToCoordinates(point:Point, zoom:number) {
 		const scale = this.scale(zoom);
-		// const untransformedPoint = this.transformation.untransform(point, scale);
+		const untransformedPoint = this.transformation.untransform(point, scale);
 
-		// return this.projection.unproject(untransformedPoint);
+		return this.projection.unproject(untransformedPoint);
 	}
 
 	project(coordinates:Coordinates) {
