@@ -1,15 +1,19 @@
 class Point {
     public x: number;
     public y: number;
-    public round: number|null;
 
     constructor(coordinates: number[]);
-    constructor(x: number, y: number, round?: number);
-    constructor(x: number|number[], y?: number, round?: number) {
+    constructor(x: number, y: number, round?: boolean);
+    constructor(x: number|number[], y?: number, round: boolean = false) {
         if (x instanceof Array) {
-            [this.x, this.y, this.round = null] = x;
+            [this.x, this.y] = x;
         } else if(y !== undefined) {
-            [this.x, this.y, this.round = null] = [x, y, round];
+            [this.x, this.y] = [x, y];
+        }
+
+        if (round) {
+            this.x = Math.round(this.x);
+            this.y = Math.round(this.y);
         }
     }
 
@@ -51,23 +55,73 @@ class Point {
 
     public add(point: Point) {
     	return new Point(
-    		this.getX() + point.getX(),
-    		this.getY() + point.getY()
+    		this.x + point.x,
+    		this.y + point.y
 		);
     }
 
     public subtract(point: Point) {
     	return new Point(
-    		this.getX() - point.getX(),
-    		this.getY() - point.getY()
+    		this.x - point.x,
+    		this.y - point.y
 		);
     }
 
     public divideBy(factor: number) {
         return new Point(
-            this.getX() / factor,
-            this.getY() / factor
+            this.x / factor,
+            this.y / factor
         );
+    }
+
+    public scaleBy(point: Point) {
+        return new Point(this.x * point.x, this.y * point.y);
+    };
+
+    public unscaleBy(point: Point) {
+        return new Point(this.x / point.x, this.y / point.y);
+    };
+
+    public distanceTo(point: Point) {
+        return Math.sqrt(
+            Math.pow(point.x - this.x, 2) +
+            Math.pow(point.y - this.y, 2)
+        );
+    };
+
+    public abs() {
+        return new Point(
+            Math.abs(this.x),
+            Math.abs(this.y)
+        );
+    }
+
+    public ceil() {
+        return new Point(
+            Math.ceil(this.x),
+            Math.ceil(this.y)
+        );
+    }
+
+    public floor() {
+        return new Point(
+            Math.floor(this.x),
+            Math.floor(this.y)
+        );
+    }
+
+    public trunc() {
+        return new Point(
+            Math.trunc(this.x),
+            Math.trunc(this.y),
+        );
+    };
+
+    public round() {
+        return new Point(
+            Math.round(this.x),
+            Math.round(this.y),
+        )
     }
 }
 

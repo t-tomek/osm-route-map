@@ -44,10 +44,6 @@ class Map {
         this.options = Object.assign({}, this.options,  options);
     };
 
-    // containerPointToLayerPoint(point: Point) {
-    //     return toPoint(point).subtract(this._getMapPanePos());
-    // };
-
 
     public getSize() {
         return new Point(this.options.width, this.options.height);
@@ -55,6 +51,10 @@ class Map {
 
     public getZoom() {
         return this.options.zoom;
+    };
+
+    public getZoomScale(toZoom: number, fromZoom: number = this.getZoom()) {
+        return this.options.crs.scale(toZoom) / this.options.crs.scale(fromZoom);
     };
 
     public getMinZoom() {
@@ -96,6 +96,20 @@ class Map {
         return isNaN(zoom) ? Infinity : zoom;
     };
 
+    public getPixelOrigin() {
+        return new Point(0, 0);
+    };
+
+    public setZoom(zoom: number) {
+        this.options.zoom = zoom;
+    };
+
+    public coordinatesToLayerPoint(coordinates: Coordinates) {
+        const projectedPoint = this.project(coordinates).round();
+        
+        return projectedPoint.subtract(this.getPixelOrigin());
+    };
+
     public project(coordinates: Coordinates, zoom: number = this.getZoom()) {
         return this.options.crs.coordinatesToPoint(coordinates, zoom);
     };
@@ -128,11 +142,16 @@ class Map {
             };
         }
 
-        var paddingOffset = paddingBR.subtract(paddingTL).divideBy(2);
+        const paddingOffset = paddingBR.subtract(paddingTL).divideBy(2);
 
         const swPoint = this.project(cordinatesBounds.getSouthWest(), zoom);
         const nePoint = this.project(cordinatesBounds.getNorthEast(), zoom);
-        const center = this.unproject(swPoint.add(nePoint).divideBy(2).add(paddingOffset), zoom);
+        const center = this.unproject(
+            swPoint.add(nePoint)
+                .divideBy(2)
+                .add(paddingOffset),
+            zoom
+        );
 
         return {
             center,

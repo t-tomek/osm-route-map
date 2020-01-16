@@ -7,12 +7,13 @@ import Point from "../common/geometry/point";
 import Coordinates from "../common/geo/coordinates";
 import CoordinatesBounds from "../common/geo/coordinatesBounds";
 import Map from "../common/map";
+import GridLayer from "../common/layer/tile/gridLayer";
 
 
 export const generate = (request: Request, response: Response) => {
     const map = new Map({
-        width: 1000,
-        height: 400,
+        width: 500,
+        height: 800,
         // center: new Coordinates(52, 19),
         // zoom: 4,
         maxZoom: 19,
@@ -20,20 +21,25 @@ export const generate = (request: Request, response: Response) => {
     });
 
 
-    const bounds = new CoordinatesBounds([
-        new Coordinates(51.10193, 17.03683),
-        new Coordinates(51.10378, 17.02399),
-        new Coordinates(51.10333, 17.01929),
-        new Coordinates(51.09540, 17.01656),
-        new Coordinates(50.89423, 14.89951),
+    const points = [
+        new Coordinates(51.1089776,17.0326689),
+        new Coordinates(51.15528106689453,16.902198791503906),
+    ];
 
-    ]);
+    const bounds = new CoordinatesBounds(points);
 
+    const grid = new GridLayer(map);
+    const centerZoom = map.getBoundsCenterZoom(bounds);
 
-    response.json({
-        map,
-        zoom: map.getBoundsCenterZoom(bounds),
-    });
+    map.setZoom(centerZoom.zoom);
+
+    response.send(grid.draw(centerZoom.center, centerZoom.zoom, points).tiles);
+    response.end();
+
+    // response.json({
+        // centerZoom,
+        // grid: grid.draw(centerZoom.center, centerZoom.zoom)
+    // });
     
 //     const coordinates = request.query.coordinates
 //         .split(';')
