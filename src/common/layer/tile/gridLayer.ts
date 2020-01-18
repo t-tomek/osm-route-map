@@ -20,6 +20,49 @@ class GridLayer {
         ;
     };
 
+    public draw2(center: Point, zoom: number) {
+        const pixelBounds = this.getTiledPixelBounds(center);
+        const tileRange = this.pxBoundsToTileRange(pixelBounds);
+        const tileCenter = tileRange.getCenter();
+
+        const tileRangeMin = tileRange.getMin();
+        const tileRangeMax = tileRange.getMax();
+
+        const halfSize = this.map.getSize().divideBy(2);
+        const unscaledPoint = this.map.project(center, zoom).unscaleBy(this.getTileSize());
+        const offset = tileRangeMin
+            .subtract(unscaledPoint)
+            .abs()
+            .scaleBy(this.getTileSize())
+            .subtract(halfSize)
+            .trunc();
+        ;
+
+        let i = 0;
+        let j = 0;
+        const tiles: any = [];
+
+        for(let y of this.range(tileRangeMin.getY(), tileRangeMax.getY())) {
+            j = 0;
+
+            for(let x of this.range(tileRangeMin.getX(), tileRangeMax.getX())) {
+                tiles.push({
+                    url: `http://fmmap.framelogic.pl/tile-server/${zoom}/${x}/${y}.png`,
+                    offset: this.getTileSize().multiply(new Point(i, j)),
+                });
+                ++j;
+            }
+            // console.log(i)
+            ++i;
+        }
+
+        return {
+            tiles,
+            imageSize: this.getTileSize().multiply(new Point(j, i)),
+            offset,
+        };
+    };
+
     public draw(center: Point, zoom: number, points: Coordinates[]) {
 
         const pixelBounds = this.getTiledPixelBounds(center);

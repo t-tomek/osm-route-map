@@ -67,6 +67,21 @@ class Point {
 		);
     }
 
+    public multiply(point: Point) {
+        return new Point(
+            this.x * point.x,
+            this.y * point.y
+        );
+    }
+
+    public multiplyBy(factor: number) {
+        return new Point(
+            this.x * factor,
+            this.y * factor
+        );
+    }
+
+
     public divideBy(factor: number) {
         return new Point(
             this.x / factor,
