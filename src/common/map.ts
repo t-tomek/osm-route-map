@@ -1,60 +1,85 @@
-import Point from "./geometry/point";
 import Bounds from "./geometry/bounds";
 import Coordinates from "./geo/coordinates";
 import CoordinatesBounds from "./geo/coordinatesBounds";
-import EPSG3857 from "./geo/crs/crs.epsg3857";
+import Crs from "./geo/crs/crs";
+import EPSG3857 from "./geo/crs/crsEpsg3857";
+import Point from "./geometry/point";
 
-type Partial<T> = {
-    [P in keyof T]?: T[P];
-}
-
-type requiredOptions = {
+type mapOptions = {
+    center: Coordinates,
+    crs: Crs,
     height: number,
-    width: number,
-};
-
-type optionalOptions = {
-    crs: any,
-    center: Coordinates | null,
-    position: Point,
-    zoom: number,
     maxZoom: number,
     minZoom: number,
+    position: Point,
+    width: number,
+    zoom: number,
     zoomSnap: number,
 };
 
-type mapOptions = requiredOptions & optionalOptions;
-type mapOptionsParameters = requiredOptions & Partial<optionalOptions>;
-
 class Map {
     private options: mapOptions = {
-        width: 400,
-        height: 400,
-
+        center:  new Coordinates(0, 0),
         crs: new EPSG3857(),
-        center:  null,
-        zoom: 1,
-        maxZoom: 19,
+        height: 400,
+        maxZoom: Number.POSITIVE_INFINITY,
         minZoom: 1,
-        zoomSnap: 1,
         position: new Point(0, 0),
+        width: 400,
+        zoom: 1,
+        zoomSnap: 1,
     };
 
-    constructor(options: mapOptionsParameters) {
+    constructor(options: Partial<mapOptions>) {
         this.options = Object.assign({}, this.options,  options);
     };
 
+    public getBoundsZoom(
+        coordinatesBounds: CoordinatesBounds,
+        inside: Boolean = false,
+        padding = new Point(0, 0)
+    ) {
+        const zoom = this.getZoom()
+        const bounds = new Bounds([
+            this.project(coordinatesBounds.getSouthEast(), zoom),
+            this.project(coordinatesBounds.getNorthWest(), zoom)
+        ]);
+        const boundsSize = bounds.getSize();
 
-    public getSize() {
-        return new Point(this.options.width, this.options.height);
+        const size = this.getSize().subtract(padding);
+        const scaleX = size.getX() / boundsSize.getX();
+        const scaleY = size.getY() / boundsSize.getY();
+        const scale = (inside) ?
+            Math.max(scaleX, scaleY) :
+            Math.min(scaleX, scaleY)
+        ;
+
+        let boundsZoom = this.getScaleZoom(scale, zoom);
+        const snap = this.getSnap();
+        if (snap) {
+            boundsZoom = Math.round(boundsZoom / (snap / 100)) * (snap / 100); // don't jump if within 1% of a snap level
+            boundsZoom = (inside) ?
+                Math.ceil(boundsZoom / snap) * snap :
+                Math.floor(boundsZoom / snap) * snap
+            ;
+        }
+
+        return Math.max(
+            this.getMinZoom(),
+            Math.min(this.getMaxZoom(), boundsZoom)
+        );
     };
 
-    public getZoom() {
-        return this.options.zoom;
+    public getCenter() {
+        return this.layerPointToCoordinates(this.getCenterLayerPoint());
     };
 
-    public getZoomScale(toZoom: number, fromZoom: number = this.getZoom()) {
-        return this.options.crs.scale(toZoom) / this.options.crs.scale(fromZoom);
+    public getCenterLayerPoint() {
+        return this.containerPointToLayerPoint(this.getSize().divideBy(2));
+    };
+
+    public containerPointToLayerPoint(point: Point) {
+        return point.subtract(this.getMapPanePos());
     };
 
     public getMinZoom() {
@@ -65,37 +90,31 @@ class Map {
         return this.options.maxZoom;
     };
 
-    public getBoundsZoom(coordinatesBounds: CoordinatesBounds, inside: Boolean = false, padding: Point = new Point(0, 0)) { // (LatLngBounds[, Boolean, Point]) -> Number
-        const size = this.getSize().subtract(padding);
-        const bounds = new Bounds([
-            this.project(coordinatesBounds.getSouthEast(), this.getZoom()),
-            this.project(coordinatesBounds.getNorthWest(), this.getZoom())
-        ]);
-        const boundsSize = bounds.getSize();
-
-        const scaleX = size.getX() / boundsSize.getX();
-        const scaleY = size.getY() / boundsSize.getY();
-        const scale = (inside) ?
-            Math.max(scaleX, scaleY) :
-            Math.min(scaleX, scaleY)
-        ;
-
-        let zoom = this.getScaleZoom(scale, this.getZoom());
-        const snap = this.options.zoomSnap;
-        if (snap) {
-            zoom = Math.round(zoom / (snap / 100)) * (snap / 100); // don't jump if within 1% of a snap level
-            zoom = inside ? Math.ceil(zoom / snap) * snap : Math.floor(zoom / snap) * snap;
-        }
-
-        return Math.max(this.getMinZoom(), Math.min(this.getMaxZoom(), zoom));
-    };
-
     public getScaleZoom(scale: number, fromZoom: number = this.getZoom()) {
-        const zoom = this.options.crs.zoom(scale * this.options.crs.scale(fromZoom));
+        const zoom = this.options
+            .crs
+            .zoom(scale * this.options.crs.scale(fromZoom));
 
         return isNaN(zoom) ? Infinity : zoom;
     };
 
+    public getSize() {
+        return new Point(this.options.width, this.options.height);
+    };
+
+    public getSnap() {
+        return this.options.zoomSnap;
+    };
+
+    public getZoom() {
+        return this.options.zoom;
+    };
+
+    public getZoomScale(toZoom: number, fromZoom: number = this.getZoom()) {
+        return this.options.crs.scale(toZoom) / this.options.crs.scale(fromZoom);
+    };
+
+    // is it useful?
     public getPixelOrigin() {
         return new Point(0, 0);
     };
@@ -106,8 +125,14 @@ class Map {
 
     public coordinatesToLayerPoint(coordinates: Coordinates) {
         const projectedPoint = this.project(coordinates).round();
-        
+
         return projectedPoint.subtract(this.getPixelOrigin());
+    };
+
+    public layerPointToCoordinates(point: Point) {
+        return this.unproject(
+            point.add(this.getPixelOrigin())
+        );
     };
 
     public project(coordinates: Coordinates, zoom: number = this.getZoom()) {
@@ -118,36 +143,52 @@ class Map {
         return this.options.crs.pointToCoordinates(point, zoom);
     };
 
-    private limitZoom(zoom: number) {
-        const snap = this.options.zoomSnap;
+    protected getBoundsCenterZoom(
+        cordinatesBounds: CoordinatesBounds,
+        options: any = {
+            padding: {},
+            paddingTopLeft: {},
+            paddingBottomRight: {},
+            maxZoom: Number.POSITIVE_INFINITY,
+        }
+    ) {
+        const paddingTL = new Point(
+            options.paddingTopLeft.x || options.padding.x || 0,
+            options.paddingTopLeft.y || options.padding.y || 0
+        );
+        const paddingBR = new Point(
+            options.paddingBottomRight.x || options.padding.y || 0,
+            options.paddingBottomRight.y || options.padding.y || 0
+        );
+        const zoom = Math.min(
+            options.maxZoom,
+            this.getBoundsZoom(
+                cordinatesBounds,
+                false,
+                paddingTL.add(paddingBR)
+            )
+        );
 
-        const limitedZoom = (snap) ?
-            Math.round(zoom / snap) * snap :
-            zoom;
-
-        return Math.max(this.getMinZoom(), Math.min(this.getMaxZoom(), limitedZoom));
-    };
-
-    public getBoundsCenterZoom(cordinatesBounds: CoordinatesBounds, options: any = {}) {
-        const paddingTL = new Point(options.paddingTopLeft || options.padding || [0, 0]);
-        const paddingBR = new Point(options.paddingBottomRight || options.padding || [0, 0]);
-
-        let zoom = this.getBoundsZoom(cordinatesBounds, false, paddingTL.add(paddingBR));
-        zoom = (typeof options.maxZoom === 'number') ? Math.min(options.maxZoom, zoom) : zoom;
-
-        if (zoom === Infinity) {
+        if (zoom === Number.POSITIVE_INFINITY) {
             return {
                 center: cordinatesBounds.getCenter(),
-                zoom: zoom
+                zoom,
             };
         }
 
         const paddingOffset = paddingBR.subtract(paddingTL).divideBy(2);
 
-        const swPoint = this.project(cordinatesBounds.getSouthWest(), zoom);
-        const nePoint = this.project(cordinatesBounds.getNorthEast(), zoom);
+        const southWestPoint = this.project(
+            cordinatesBounds.getSouthWest(),
+            zoom
+        );
+        const northEastPoint = this.project(
+            cordinatesBounds.getNorthEast(),
+            zoom
+        );
         const center = this.unproject(
-            swPoint.add(nePoint)
+            southWestPoint
+                .add(northEastPoint)
                 .divideBy(2)
                 .add(paddingOffset),
             zoom
@@ -159,6 +200,22 @@ class Map {
         };
     };
 
+    protected getMapPanePos() {
+        return new Point(0, 0);
+    };
+
+    protected limitZoom(zoom: number) {
+        const snap = this.getSnap();
+
+        const snapZoom = (snap) ?
+            Math.round(zoom / snap) * snap :
+            zoom;
+
+        return Math.max(
+            this.getMinZoom(),
+            Math.min(this.getMaxZoom(), snapZoom)
+        );
+    };
 }
 
 export default Map;

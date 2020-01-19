@@ -1,16 +1,5 @@
 class Point {
-    public x: number;
-    public y: number;
-
-    constructor(coordinates: number[]);
-    constructor(x: number, y: number, round?: boolean);
-    constructor(x: number|number[], y?: number, round: boolean = false) {
-        if (x instanceof Array) {
-            [this.x, this.y] = x;
-        } else if(y !== undefined) {
-            [this.x, this.y] = [x, y];
-        }
-
+    constructor(private x: number, private y: number, round: boolean = false) {
         if (round) {
             this.x = Math.round(this.x);
             this.y = Math.round(this.y);
@@ -54,17 +43,17 @@ class Point {
     }
 
     public add(point: Point) {
-    	return new Point(
-    		this.x + point.x,
-    		this.y + point.y
-		);
+        return new Point(
+            this.x + point.x,
+            this.y + point.y
+        );
     }
 
     public subtract(point: Point) {
-    	return new Point(
-    		this.x - point.x,
-    		this.y - point.y
-		);
+        return new Point(
+            this.x - point.x,
+            this.y - point.y
+        );
     }
 
     public multiply(point: Point) {
