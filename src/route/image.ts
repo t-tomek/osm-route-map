@@ -1,6 +1,7 @@
 import Coordinates from "../common/geo/coordinates";
 import CoordinatesBounds from "../common/geo/coordinatesBounds";
 import GridLayer from "../common/layer/tile/gridLayer";
+import TileLayer from "../common/layer/tile/tileLayer";
 import httpRequest from "request-promise-native";
 import Map from "../common/map";
 import Point from "../common/geometry/point";
@@ -23,7 +24,7 @@ export const generate = async (request: Request, response: Response) => {
         minZoom: 1,
     });
 
-
+    // const tileLayer =
     // const points = [
     //     new Coordinates(51.1089776,17.0326689),
     //     new Coordinates(51.15528106689453,16.902198791503906),
@@ -32,7 +33,9 @@ export const generate = async (request: Request, response: Response) => {
 
     // const bounds = new CoordinatesBounds(points);
 
-    // const grid = new GridLayer(map);
+    const grid = new TileLayer(map, 'http://fmmap.framelogic.pl/tile-server/{z}/{x}/{y}.png');
+
+    console.log(grid.getTileUrl(new Point(1,1)))
     // const centerZoom = map.getBoundsCenterZoom(bounds);
 
     // map.setZoom(centerZoom.zoom);

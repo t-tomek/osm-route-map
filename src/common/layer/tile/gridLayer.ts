@@ -3,7 +3,7 @@ import Coordinates from "../../geo/coordinates";
 import Point from "../../geometry/point";
 import Map from "../../map";
 
-type gridLayerOptions = {
+export type gridLayerOptions = {
     keepBuffer: number,
     maxNativeZoom: number,
     maxZoom: number,
@@ -14,7 +14,7 @@ type gridLayerOptions = {
 };
 
 class GridLayer {
-    protected options = {
+    protected options: gridLayerOptions = {
         keepBuffer: 2,
         maxNativeZoom: Number.POSITIVE_INFINITY,
         maxZoom: Number.POSITIVE_INFINITY,
@@ -25,7 +25,7 @@ class GridLayer {
     };
     protected isLoading = false;
 
-    constructor(protected map: Map, options: Partial<gridLayerOptions>) {
+    constructor(protected map: Map, options: Partial<gridLayerOptions> = {}) {
         this.options = Object.assign({}, this.options,  options);
     };
 
@@ -92,7 +92,7 @@ class GridLayer {
     };
 
     protected setView(center: Coordinates, zoom: number) {
-        var tileZoom = this.clampZoom(Math.round(zoom));
+        const tileZoom = this.clampZoom(Math.round(zoom));
     };
 
     protected resetView() {
