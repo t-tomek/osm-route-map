@@ -1,7 +1,11 @@
 import Bounds from "../../geometry/bounds";
 import Coordinates from "../../geo/coordinates";
-import Point from "../../geometry/point";
+import Layer from "../layer";
 import Map from "../../map";
+import Point from "../../geometry/point";
+import {
+    range
+} from "../../core/utils";
 
 export type gridLayerOptions = {
     keepBuffer: number,
@@ -13,7 +17,7 @@ export type gridLayerOptions = {
     zIndex: number,
 };
 
-class GridLayer {
+abstract class GridLayer extends Layer {
     protected options: gridLayerOptions = {
         keepBuffer: 2,
         maxNativeZoom: Number.POSITIVE_INFINITY,
@@ -24,9 +28,14 @@ class GridLayer {
         zIndex: 1,
     };
     protected isLoading = false;
+    protected map: Map;
+    protected tiles: any;
 
-    constructor(protected map: Map, options: Partial<gridLayerOptions> = {}) {
+    constructor(options: Partial<gridLayerOptions> = {}) {
+        super();
+
         this.options = Object.assign({}, this.options,  options);
+        this.tiles = {};
     };
 
     public getIsLoading() {
@@ -42,10 +51,17 @@ class GridLayer {
         ;
     };
 
-
     public setZIndex(zIndex: number) {
         this.options.zIndex = zIndex;
         this.updateZIndex();
+
+        return this;
+    };
+
+    public abstract createTile(point: Point, zoom: number): any;
+
+    public redraw() {
+        this.update(this.map.getCenter());
 
         return this;
     };
@@ -108,16 +124,36 @@ class GridLayer {
 
 
 
-    public draw2(center: Coordinates, zoom: number) {
+    private update(center: Coordinates) {
+        const zoom = this.clampZoom(this.map.getZoom());
+
         const pixelBounds = this.getTiledPixelBounds(center);
         const tileRange = this.pxBoundsToTileRange(pixelBounds);
         const tileCenter = tileRange.getCenter();
 
+        // const margin = this.options.keepBuffer;
+        // const noPruneRange = new Bounds([
+        //     tileRange.getBottomLeft().subtract(new Point(margin, -margin)),
+        //     tileRange.getTopRight().add(new Point(margin, -margin))
+        // ]);
+
         const tileRangeMin = tileRange.getMin();
         const tileRangeMax = tileRange.getMax();
 
+        if([
+            tileRangeMin.getX(),
+            tileRangeMin.getY(),
+            tileRangeMax.getX(),
+            tileRangeMax.getY(),
+        ].every(x => !Number.isFinite(x))) {
+            throw new Error('Attempted to load an infinite number of tiles');
+        }
+
         const halfSize = this.map.getSize().divideBy(2);
-        const unscaledPoint = this.map.project(center, zoom).unscaleBy(this.getTileSize());
+        const unscaledPoint = this
+            .map
+            .project(center, zoom)
+            .unscaleBy(this.getTileSize());
         const offset = tileRangeMin
             .subtract(unscaledPoint)
             .abs()
@@ -126,29 +162,72 @@ class GridLayer {
             .trunc();
         ;
 
+        const queue = [];
         let i = 0;
         let j = 0;
-        const tiles: any = [];
 
-        for(let y of this.range(tileRangeMin.getY(), tileRangeMax.getY())) {
-            j = 0;
+        const tileZoom = zoom;
 
-            for(let x of this.range(tileRangeMin.getX(), tileRangeMax.getX())) {
-                tiles.push({
-                    url: `http://fmmap.framelogic.pl/tile-server/${zoom}/${x}/${y}.png`,
-                    offset: this.getTileSize().multiply(new Point(j, i)),
-                });
-                ++j;
+        for(let y of range(tileRangeMin.getY(), tileRangeMax.getY())) {
+            i = 0;
+
+            for(let x of range(tileRangeMin.getX(), tileRangeMax.getX())) {
+                const point = new Point(x, y);
+
+                const tile = this.tiles[this.tileCoordsToKey(point, tileZoom)];
+
+                if (tile) {
+                    tile.current = true;
+                } else {
+                    queue.push({
+                        point,
+                        tileZoom,
+                    });
+                }
+                ++i;
             }
-            // console.log(i)
-            ++i;
+            ++j;
         }
 
-        return {
-            tiles,
-            imageSize: this.getTileSize().multiply(new Point(j, i)),
-            offset,
+        queue.sort(function ({point: pointA}, {point: pointB}) {
+            return pointA.distanceTo(tileCenter) - pointB.distanceTo(tileCenter);
+        });
+
+        queue.forEach((tile) => {
+            return this.addTile(tile);
+        });
+
+
+        // return {
+        //     tiles,
+        //     imageSize: this.getTileSize().multiply(new Point(i, j)),
+        //     offset,
+        // };
+    };
+
+    protected addTile({point, tileZoom}: {point: Point, tileZoom: number}) {
+        const tilePos = this.getTilePos(point);
+        const key = this.tileCoordsToKey(point, tileZoom);
+
+        const tile = this.createTile(point, tileZoom);
+
+        this.tiles[key] = {
+            tile,
+            tileZoom,
+            point,
+            current: true
         };
+    };
+
+
+
+    protected tileCoordsToKey(point: Point, zoom: number) {
+        return point.getX() + ':' + point.getY() + ':' + zoom;
+    };
+
+    protected getTilePos(point: Point) {
+        return point
+            .scaleBy(this.getTileSize());
     };
 
     public draw(center: Coordinates, zoom: number, points: Coordinates[]) {
@@ -189,10 +268,10 @@ class GridLayer {
             tiles += `<div style="position: absolute;top: calc(${offset.getY()}px - 10px);left: calc(${offset.getX()}px - 10px);color: cornsilk;width: 20px;height: 20px;display: flex;justify-content: center;background:rgba(127,0,0,0.5); border: solid; border-radius: 20px;">${++i}</div>`
         });
 
-        for(let y of this.range(tileRangeMin.getY(), tileRangeMax.getY())) {
+        for(let y of range(tileRangeMin.getY(), tileRangeMax.getY())) {
             tiles += '<div>';
 
-            for(let x of this.range(tileRangeMin.getX(), tileRangeMax.getX())) {
+            for(let x of range(tileRangeMin.getX(), tileRangeMax.getX())) {
                 let coords = new Point(x, y);
 
                 tiles += `<img src="http://fmmap.framelogic.pl/tile-server/${zoom}/${x}/${y}.png"/>`;
@@ -217,15 +296,7 @@ class GridLayer {
     };
 
 
-    protected *range(start: number = 0, end: number,  step: number = 1) {
-        let  iterationCount = 0;
-        for (let i = start; i <= end; i += step) {
-            iterationCount++;
-            yield i;
-        }
 
-        return iterationCount;
-    };
 }
 
 export default GridLayer;

@@ -24,6 +24,7 @@ abstract class Crs {
     };
 
     public pointToCoordinates(point: Point, zoom: number) {
+
         const scale = this.scale(zoom);
         const untransformedPoint = this.transformation.untransform(point, scale);
 

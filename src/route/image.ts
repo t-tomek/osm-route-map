@@ -11,31 +11,43 @@ import {
     Response,
 } from "express";
 
-const width = 2000;
-const height = 700;
+const width = 1000;
+const height = 600;
 
 export const generate = async (request: Request, response: Response) => {
     const map = new Map({
         width,
         height,
-        // center: new Coordinates(52, 19),
-        // zoom: 4,
         maxZoom: 19,
         minZoom: 1,
+        zoom: 16,
+        center: new Coordinates(51.15528106689453,16.902198791503906)
     });
 
-    // const tileLayer =
-    // const points = [
-    //     new Coordinates(51.1089776,17.0326689),
+    const point = new Coordinates(51.15528106689453,16.902198791503906);
+    
+    const osmTileLayer = new TileLayer('http://fmmap.framelogic.pl/tile-server/{z}/{x}/{y}.png', {
+        keepBuffer: 0,
+    });
+
+    osmTileLayer.addTo(map);
+
+
+    console.log(map)
+
+    map.panTo(point);
+    // console.log("cneter", map.getCenter())
+    // map.fitBounds(new CoordinatesBounds([
+    //     new Coordinates(0, 0),
+    //     new Coordinates(90, 180),
+    // ]));
+
+    // const bounds = new CoordinatesBounds([
     //     new Coordinates(51.15528106689453,16.902198791503906),
-    //     new Coordinates(51.073702, 16.884238)
-    // ];
+    //     new Coordinates(51.15528106689453,16.907)
+    // ]);
 
-    // const bounds = new CoordinatesBounds(points);
 
-    const grid = new TileLayer(map, 'http://fmmap.framelogic.pl/tile-server/{z}/{x}/{y}.png');
-
-    console.log(grid.getTileUrl(new Point(1,1)))
     // const centerZoom = map.getBoundsCenterZoom(bounds);
 
     // map.setZoom(centerZoom.zoom);
@@ -94,19 +106,13 @@ export const generate = async (request: Request, response: Response) => {
     //         width,
     //         height
     //     })
-    //     // .resize(200, 300, {
-    //     //     // kernel: sharp.kernel.nearest,
-    //     //     // fit: 'contain',
-    //     //     // position: 'right top',
-    //     //     background: { r: 255, g: 255, b: 255, alpha: 0.5 }
-    //     // })
     //     .png()
     //     .toBuffer((error, data) => {
     //         response.type('image/png');
     //         response.send(data);
     //     })
 
-    // response.send(grid.draw(centerZoom.center, centerZoom.zoom, points).tiles);
+    // response.send(osmTileLayer.draw(centerZoom.center, centerZoom.zoom, points).tiles);
     response.end();
 
     // response.json({

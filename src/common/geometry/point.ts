@@ -93,6 +93,11 @@ class Point {
         );
     };
 
+    public isEqual(point: Point) {
+        return this.x === point.x &&
+            this.y === point.y;
+    }
+
     public abs() {
         return new Point(
             Math.abs(this.x),
