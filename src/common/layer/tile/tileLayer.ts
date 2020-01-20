@@ -1,6 +1,9 @@
-import GridLayer from "./gridLayer";
-import Point from "../../geometry/point";
 import Map from "../../map";
+import Point from "../../geometry/point";
+import {
+    gridLayerOptions,
+    default as GridLayer,
+} from "./gridLayer";
 import {
     template
 } from "../../core/utils";
@@ -22,8 +25,8 @@ type tile = {
 };
 
 class TileLayer extends GridLayer {
-    constructor(protected map: Map, private url = "", options:  Partial<tileLayerOptions> = {}) {
-        super(map, options);
+    constructor(private url = "", options:  Partial<gridLayerOptions & tileLayerOptions> = {}) {
+        super(options);
 
         this.options = Object.assign({}, this.options, {
             crossOrigin: false,
@@ -38,15 +41,17 @@ class TileLayer extends GridLayer {
         }, options);
     };
 
-    public createTile(point: Point) {
-        //
+    public createTile(point: Point, zoom: number): tile {
+        return {
+            url: this.getTileUrl(point, zoom),
+        };
     };
 
-    public getTileUrl(point: Point) {
+    public getTileUrl(point: Point, zoom: number) {
         const data = {
             x: point.getX(),
             y: point.getY(),
-            z: 0,
+            z: zoom,
         };
 
         return template(this.url, data);
